@@ -3,7 +3,16 @@
 指定したディレクトリ(ワークスペース)の中の HTML を、WYSIWYG エディタで編集するデスクトップアプリ。
 Tauri 2(Rust) + Scalactive 0.6.2(Scala.js) + Tiptap(WYSIWYG) + CodeMirror(CSS/JS)。
 
-## 必要なもの
+## インストール(macOS)
+ターミナルで次を実行すると、最新版を `/Applications` に入れます(Apple Silicon・Intel を自動で判別)。
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ondeoma/local-html-editor/main/install.sh | sh
+```
+ブラウザでダウンロードした `.dmg` から入れると、公証していないため「開いていません」と表示されます。
+その場合は「システム設定 → プライバシーとセキュリティ」の「このまま開く」で許可してください。
+Windows・Linux は [Releases](https://github.com/Ondeoma/local-html-editor/releases) からインストーラを入手してください。
+
+## 開発に必要なもの
 - Rust(cargo)、sbt 1.12 系、Node.js 24 系
 
 ## 起動
