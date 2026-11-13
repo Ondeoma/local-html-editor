@@ -1,0 +1,114 @@
+# バージョンタグ(v1.2.3 など)を push すると、各OS向けのインストーラを作って GitHub のリリースに添付する.
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# 作るもの
+#   Windows             … .msi / .exe(NSIS)
+#   macOS Universal     … .dmg(Intel・Apple Silicon 両対応)
+#   macOS Apple Silicon … .dmg(Apple Silicon 専用. Universal より小さい)
+#   Linux               … .deb / .rpm / .AppImage
+#
+# アプリのバージョンはタグから付ける(tauri.conf.json の version をビルド時に書き換える).
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # 先にリリースを1つ作っておき、各OSのビルドはそこへ添付する(同時に作って重複しないように)
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+    steps:
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "ローカルHTMLエディタ $TAG" --generate-notes
+          fi
+          echo "id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .id)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            rust_targets: ''
+            args: ''
+          - name: macOS Universal
+            os: macos-latest
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: --target universal-apple-darwin
+          - name: macOS Apple Silicon
+            os: macos-latest
+            rust_targets: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+          - name: Linux
+            os: ubuntu-22.04
+            rust_targets: ''
+            args: ''
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux のビルドに必要なパッケージ
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf rpm
+
+      # フロントエンド: Scala.js(sbt)+ Vite
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # バックエンド: Rust(Tauri)
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: ${{ matrix.name }}
+
+      - run: npm ci
+
+      - name: タグからバージョンを設定
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e '
+            const fs = require("fs")
+            const p = "src-tauri/tauri.conf.json"
+            const c = JSON.parse(fs.readFileSync(p, "utf8"))
+            c.version = process.argv[1]
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + "\n")
+          ' "$VERSION"
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}

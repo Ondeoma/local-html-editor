@@ -1,0 +1,9 @@
+/* ワークスペース全体の共通スタイル(全HTMLが読み込む) */
+body { max-width: 860px; margin: 2rem auto; padding: 0 1rem; font-family: -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; line-height: 1.7; color: #222; }
+h1 { border-bottom: 2px solid #2f6fd8; padding-bottom: .2em; }
+.js-badge { display: inline-block; padding: .1em .6em; border-radius: 999px; background: #2f6fd8; color: #fff; font-size: .8rem; }
+.to-top { position: fixed; right: 1rem; bottom: 1rem; display: none; border: none; border-radius: 50%; width: 2.6rem; height: 2.6rem; background: #2f6fd8; color: #fff; font-size: 1.2rem; cursor: pointer; }
+.copy-btn { float: right; font-size: .75rem; margin: -.4em -.6em 0 0; cursor: pointer; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable p { display: inline; }
+th.sortable::after { content: " ⇅"; color: #999; }

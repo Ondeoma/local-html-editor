@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JSの動作確認</title>
+<!-- lhe:head -->
+<link rel="stylesheet" href="style.css">
+<script src="lhe.js" defer></script>
+<script src="script.js" defer></script>
+<script src="index.js" defer></script>
+<!-- /lhe:head -->
+</head>
+<body>
+<!-- lhe:content -->
+<h1>JSの動作確認</h1>
+<!--lhe:toc-->
+<h2>共通スクリプト(script.js)</h2>
+<p>プレビューで開くと、右上に「JS 動作中」のバッジが出ます。下のコードブロックには「コピー」ボタンが付きます。</p>
+<pre><code>console.log('こんにちは')</code></pre>
+<p>外部リンクは新しいタブで開きます: <a href="https://example.com">example.com</a></p>
+<h2>このページだけのスクリプト(index.js)</h2>
+<p>現在の時刻: {{時刻}}</p>
+<p>表の見出しをクリックすると並べ替えます。</p>
+<table><tbody><tr><th><p>名前</p></th><th><p>点数</p></th></tr><tr><td><p>佐藤</p></td><td><p>72</p></td></tr><tr><td><p>鈴木</p></td><td><p>95</p></td></tr><tr><td><p>高橋</p></td><td><p>58</p></td></tr></tbody></table>
+<h2>Mermaid図</h2>
+<!--lhe:mermaid-->
+<pre class="lhe-mermaid">graph LR
+  A[style.css] --&gt; B[index.css]
+  B --&gt; C[lhe.js]
+  C --&gt; D[script.js]
+  D --&gt; E[index.js]</pre>
+<div data-icon="ℹ️" class="lhe-panel" style="background-color: #e8f1fd;"><span class="lhe-panel-icon">ℹ️</span><div class="lhe-panel-body"><p>docs/guide.html では、上位の style.css・script.js も読み込まれます。</p></div></div>
+<p>スクロールすると右下に「↑」ボタンが出ます。</p>
+<p style="margin-top: 60vh">(スクロール確認用の余白)</p>
+<!-- /lhe:content -->
+</body>
+</html>

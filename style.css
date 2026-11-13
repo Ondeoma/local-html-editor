@@ -1,0 +1,74 @@
+/* アプリ全体のスタイル(各画面のスタイルは .st の <style scoped>) */
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #6b7280; --line: #d8dde3; --side: #f6f7f9;
+  --hover: rgba(0,0,0,.06); --selected: #dbe7fb; --accent: #2f6fd8; --accent-soft: #9dbcf0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1f22; --fg: #e3e5e8; --muted: #9aa0a6; --line: #3a3d42; --side: #26282c;
+    --hover: rgba(255,255,255,.07); --selected: #2c3e5c; --accent: #4f8bf0; --accent-soft: #3d5f99;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Segoe UI", sans-serif; font-size: 14px; background: var(--bg); color: var(--fg); }
+#app { height: 100%; }
+button { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
+button:hover { background: var(--hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.muted { color: var(--muted); }
+/* ドラッグ中は iframe がマウスを奪わないように */
+body.dragging iframe { pointer-events: none; }
+body.dragging { user-select: none; }
+
+/* ---- WYSIWYG エディタの中身 ---- */
+.lhe-content .ProseMirror { outline: none; min-height: 100%; line-height: 1.7; padding-left: 8px; }
+.lhe-content .ProseMirror > * + * { margin-top: .6em; }
+.lhe-content .ProseMirror a { color: var(--accent); }
+.lhe-content .ProseMirror pre { background: var(--side); color: var(--fg); }
+.lhe-content .ProseMirror blockquote { color: var(--muted); }
+.lhe-content .ProseMirror table { margin: .6em 0; table-layout: fixed; width: 100%; }
+.lhe-content .ProseMirror td, .lhe-content .ProseMirror th { position: relative; min-width: 40px; }
+.lhe-content .ProseMirror .selectedCell::after { content: ""; position: absolute; inset: 0; background: rgba(47,111,216,.15); pointer-events: none; }
+.lhe-content .ProseMirror .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: var(--accent); pointer-events: none; }
+.lhe-content .ProseMirror.resize-cursor { cursor: col-resize; }
+.lhe-content .ProseMirror .tableWrapper { overflow-x: auto; }
+.lhe-content .ProseMirror img { max-width: 100%; }
+.lhe-content .ProseMirror .ProseMirror-selectednode, .lhe-content .ProseMirror [data-resize-wrapper].ProseMirror-selectednode { outline: 2px solid var(--accent); }
+.lhe-content .ProseMirror [data-resize-handle] { position: absolute; width: 10px; height: 10px; background: var(--accent); border: 1px solid #fff; border-radius: 2px; z-index: 1; }
+.lhe-content .ProseMirror [data-resize-handle="bottom-right"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.lhe-content .ProseMirror [data-resize-handle="bottom-left"] { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.lhe-content .ProseMirror [data-resize-handle="left"] { left: -5px; top: 50%; cursor: ew-resize; }
+.lhe-content .ProseMirror [data-resize-handle="right"] { right: -5px; top: 50%; cursor: ew-resize; }
+.lhe-content .ProseMirror .lhe-panel { color: #1f2328; }
+.lhe-content .ProseMirror .lhe-panel-icon { cursor: pointer; }
+.lhe-content .ProseMirror .lhe-embed-view { position: relative; }
+.lhe-content .ProseMirror .lhe-embed-view iframe { pointer-events: none; display: block; }
+.lhe-content .ProseMirror .lhe-embed-cover { position: absolute; inset: 0; cursor: default; }
+.lhe-content .ProseMirror .lhe-file a { pointer-events: none; }
+.lhe-toc-view { user-select: none; }
+.lhe-slot-view { margin: 1em 0; padding: 1.2em; border: 2px dashed var(--accent-soft); border-radius: 8px; text-align: center; color: var(--accent); background: rgba(47,111,216,.06); user-select: none; }
+.lhe-drag-handle { width: 18px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: grab; border-radius: 4px; font-size: 14px; user-select: none; }
+.lhe-drag-handle:hover { background: var(--hover); color: var(--fg); }
+.lhe-drag-handle:active { cursor: grabbing; }
+.lhe-mermaid-view { border: 1px dashed var(--line); border-radius: 6px; padding: 6px 10px; }
+.lhe-mermaid-bar { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: var(--muted); }
+.lhe-mermaid-bar button { font-size: .8rem; padding: 1px 8px; }
+.lhe-mermaid-view textarea { width: 100%; min-height: 8em; margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; background: var(--side); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+.lhe-content .ProseMirror p.is-editor-empty:first-child::before, .lhe-content .ProseMirror .is-empty::before { content: attr(data-placeholder); color: var(--muted); float: left; height: 0; pointer-events: none; }
+
+/* ---- 「/」メニュー・浮動メニュー ---- */
+.lhe-slash { position: fixed; z-index: 1200; width: 240px; max-height: 320px; overflow: auto; padding: 4px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.2); font-size: .9rem; }
+.lhe-slash-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 5px; cursor: pointer; }
+.lhe-slash-item.on { background: var(--selected); }
+.lhe-slash-icon { width: 28px; text-align: center; flex: none; color: var(--muted); font-size: .85rem; }
+.lhe-slash-empty { padding: 6px 8px; color: var(--muted); }
+.lhe-bubble { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: .8rem; z-index: 50; max-width: min(640px, 90vw); }
+.lhe-bubble button { border: none; background: transparent; padding: 3px 7px; font-size: .8rem; border-radius: 5px; }
+.lhe-bubble button:hover { background: var(--hover); }
+.lhe-menu-sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; }
+.lhe-swatches { display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; color: var(--muted); }
+.lhe-bubble .lhe-swatch { width: 16px; height: 16px; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 3px; }
+.lhe-swatches input { width: 20px; height: 18px; padding: 0; border: none; background: none; cursor: pointer; }

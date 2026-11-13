@@ -1,0 +1,2 @@
+/* blog/ の全ページ(layout.html に埋め込まれるページ)に効くCSS */
+.lhe-page { padding: 1rem 1.2rem; border-left: 4px solid #2f6fd8; background: #f7f9fc; border-radius: 4px; }
