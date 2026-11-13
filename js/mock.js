@@ -38,6 +38,7 @@ mockIPC((cmd, a) => {
     case 'save_asset': return 'mock_IMG/file.png'
     case 'copy_name': return a.path.replace(/\.html$/, '_copy.html')
     case 'duplicate_html': { const p = (a.path.includes('/') ? a.path.slice(0, a.path.lastIndexOf('/') + 1) : '') + (a.name.endsWith('.html') ? a.name : a.name + '.html'); files.set(p, files.get(a.path)); return p }
+    case 'children_html': return a.desc ? '<ul><li><a href="#">B</a></li><li><a href="#">A</a></li></ul>' : '<ul><li><a href="#">A</a></li><li><a href="#">B</a></li></ul>'
     case 'reveal': console.log('[mock] reveal', a.path); return null
     case 'plugin:dialog|open': return '/mock/workspace'
     default: throw new Error('mock: unknown command ' + cmd)

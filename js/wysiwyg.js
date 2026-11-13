@@ -6,7 +6,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle, Color } from '@tiptap/extension-text-style'
 import { TableKit, TableCell, TableHeader } from '@tiptap/extension-table'
 import { NodeSelection } from '@tiptap/pm/state'
-import { uploadAsset, fileUrl, isRelativeUrl, pickFiles } from './host.js'
+import { uploadAsset, fileUrl, isRelativeUrl, pickFiles, invoke } from './host.js'
 import { prompt } from './dialog.js'
 import { Placeholder } from '@tiptap/extensions'
 import DragHandle from '@tiptap/extension-drag-handle'
@@ -196,6 +196,69 @@ const Slot = Node.create({
   },
 })
 
+/**
+ * 子ページ一覧. このHTMLと同名のディレクトリの中(孫を含む)のHTMLへのリンクを並べる.
+ * 保存時は <nav class="lhe-children" data-order="asc|desc"> の枠だけを出し、中身(リンク)はアプリ(Rust)が作る.
+ */
+const ChildList = Node.create({
+  name: 'childList',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addOptions() { return { htmlPath: '' } },
+  addAttributes() {
+    return { order: { default: 'asc', parseHTML: (el) => (el.getAttribute('data-order') === 'desc' ? 'desc' : 'asc'), renderHTML: (a) => ({ 'data-order': a.order }) } }
+  },
+  parseHTML() { return [{ tag: 'nav.lhe-children' }] },
+  renderHTML({ HTMLAttributes }) { return ['nav', mergeAttributes({ class: 'lhe-children' }, HTMLAttributes)] },
+  addNodeView() {
+    const htmlPath = this.options.htmlPath
+    return ({ node, getPos, editor }) => {
+      let cur = node
+      const dom = document.createElement('div')
+      dom.className = 'lhe-children-view'
+      const bar = document.createElement('div')
+      bar.className = 'lhe-children-bar'
+      const sel = document.createElement('select')
+      sel.title = '並び順'
+      for (const [v, label] of [['asc', '名前の昇順'], ['desc', '名前の降順']]) sel.add(new Option(label, v))
+      sel.value = node.attrs.order
+      sel.addEventListener('change', () => {
+        const pos = getPos()
+        if (typeof pos === 'number') editor.view.dispatch(editor.state.tr.setNodeAttribute(pos, 'order', sel.value))
+      })
+      bar.append('子ページ一覧', sel)
+      const list = document.createElement('nav')
+      list.className = 'lhe-children'
+      dom.append(bar, list)
+      let timer = 0
+      const load = () => {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          invoke('children_html', { path: htmlPath, desc: cur.attrs.order === 'desc' })
+            .then((h) => { list.innerHTML = h }, (e) => { list.textContent = String(e) })
+        }, 200)
+      }
+      load()
+      // ページが保存・作成されたら(タイトルや子ページが変わるかもしれないので)読み直す
+      window.addEventListener('lhe-saved', load)
+      return {
+        dom,
+        update: (n) => {
+          if (n.type !== cur.type) return false
+          const changed = n.attrs.order !== cur.attrs.order
+          cur = n
+          if (changed) { sel.value = n.attrs.order; load() }
+          return true
+        },
+        stopEvent: (e) => bar.contains(e.target),
+        ignoreMutation: () => true,
+        destroy: () => { clearTimeout(timer); window.removeEventListener('lhe-saved', load) },
+      }
+    }
+  },
+})
+
 /** ブロックの左に出る、ドラッグで並べ替えるためのつまみ */
 function dragHandle() {
   return DragHandle.configure({
@@ -284,6 +347,8 @@ function toEditor(html, base) {
   })
   // lhe.js が描画した結果が保存されていた場合は取り除く
   t.content.querySelectorAll('nav.lhe-toc, .lhe-mermaid-svg').forEach((el) => el.remove())
+  // 子ページ一覧の中身(リンク)はアプリが作るので、エディタには枠だけを入れる
+  t.content.querySelectorAll('nav.lhe-children').forEach((el) => el.replaceChildren())
   return t.innerHTML
 }
 
@@ -350,6 +415,7 @@ export function createWysiwyg(el, opts) {
       Toc,
       Mermaid,
       Slot,
+      ChildList.configure({ htmlPath: opts.htmlPath }),
       dragHandle(),
       Placeholder.configure({ placeholder: ({ node }) => (node.type.name === 'heading' ? '見出し' : '「/」で見出し・表・画像などを挿入') }),
       SlashCommand(() => items, (it) => exec(it.cmd, it.arg)),
@@ -491,6 +557,7 @@ export function createWysiwyg(el, opts) {
     unpanel: () => c().lift('panel').run(),
     toc: () => c().insertContent({ type: 'toc' }).run(),
     mermaid: () => c().insertContent({ type: 'mermaid' }).run(),
+    children: () => c().insertContent({ type: 'childList' }).run(),
     // コンテンツ枠は layout.html に1つだけ
     slot: () => {
       if (!isLayout) return

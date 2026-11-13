@@ -109,6 +109,7 @@ object Store {
   def notifySaved(path: String, content: String, source: Int): Unit = {
     savedSeq += 1
     saved := Some(Saved(path, content, source, savedSeq))
+    announce()
   }
 
   def activePane: Option[PaneState] = layout.v.panes.find(_.id == active.v).orElse(layout.v.panes.headOption)
@@ -129,7 +130,13 @@ object Store {
 
   def close(): Unit = workspace := None
 
-  def reloadTree(): Future[Unit] = Host.listTree().map(tree := _).andThen { case Failure(e) => Host.report(e) }
+  def reloadTree(): Future[Unit] = Host.listTree().map { t =>
+    tree := t
+    announce()
+  }.andThen { case Failure(e) => Host.report(e) }
+
+  /** エディタ(JS)の中の表示(子ページ一覧など)に、ファイルが変わったことを伝える */
+  private def announce(): Unit = org.scalajs.dom.window.dispatchEvent(new org.scalajs.dom.Event("lhe-saved"))
 
   /** HTMLを操作対象のペインで開きます */
   def openFile(path: String): Unit = activePane.foreach(_.file := Some(path))

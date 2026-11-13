@@ -26,6 +26,10 @@ body.dragging { user-select: none; }
 /* ---- WYSIWYG エディタの中身 ---- */
 .lhe-content .ProseMirror { outline: none; min-height: 100%; line-height: 1.7; padding-left: 8px; }
 .lhe-content .ProseMirror > * + * { margin-top: .6em; }
+.lhe-content .ProseMirror ul, .lhe-content .ProseMirror ol { margin-top: .2em; margin-bottom: .2em; padding-left: 1.5em; }
+.lhe-content .ProseMirror li > p { margin: 0; }
+.lhe-content .ProseMirror li + li { margin-top: .05em; }
+.lhe-content .ProseMirror .lhe-children ul { margin: .1em 0; }
 .lhe-content .ProseMirror a { color: var(--accent); }
 .lhe-content .ProseMirror pre { background: var(--side); color: var(--fg); }
 .lhe-content .ProseMirror blockquote { color: var(--muted); }
@@ -49,6 +53,10 @@ body.dragging { user-select: none; }
 .lhe-content .ProseMirror .lhe-embed-cover { position: absolute; inset: 0; cursor: default; }
 .lhe-content .ProseMirror .lhe-file a { pointer-events: none; }
 .lhe-toc-view { user-select: none; }
+.lhe-children-view { border: 1px dashed var(--line); border-radius: 6px; padding: 6px 10px; user-select: none; }
+.lhe-children-bar { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
+.lhe-children-bar select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.lhe-children-view a { pointer-events: none; }
 .lhe-slot-view { margin: 1em 0; padding: 1.2em; border: 2px dashed var(--accent-soft); border-radius: 8px; text-align: center; color: var(--accent); background: rgba(47,111,216,.06); user-select: none; }
 .lhe-drag-handle { width: 18px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: grab; border-radius: 4px; font-size: 14px; user-select: none; }
 .lhe-drag-handle:hover { background: var(--hover); color: var(--fg); }

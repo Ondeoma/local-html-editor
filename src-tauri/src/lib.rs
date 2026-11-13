@@ -135,7 +135,15 @@ fn save_html(ws: State<Ws>, trash: State<Trash>, path: String, title: String, co
     if fs::read_to_string(&p).ok().as_deref() != Some(html.as_str()) {
         fs::write(p, html).map_err(|e| e.to_string())?;
     }
-    workspace::sync_assets(&root, &path, &content, &mut trash.0.lock().unwrap())
+    workspace::sync_assets(&root, &path, &content, &mut trash.0.lock().unwrap())?;
+    // タイトルが変わったかもしれないので、親のページの子ページ一覧も作り直す
+    workspace::refresh_parents(&root, &path)
+}
+
+/// 子ページ一覧の中身(エディタでの表示用)
+#[tauri::command]
+fn children_html(ws: State<Ws>, path: String, desc: bool) -> Result<String, String> {
+    Ok(workspace::children_html(&ws.root()?, &path, desc))
 }
 
 /// 複製するときの既定の名前
@@ -251,7 +259,8 @@ pub fn run() {
             save_asset,
             reveal,
             copy_name,
-            duplicate_html
+            duplicate_html,
+            children_html
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

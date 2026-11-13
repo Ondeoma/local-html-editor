@@ -96,6 +96,7 @@
 | 添付ファイル | `<div class="lhe-file"><a href="page_IMG/資料.pdf" download="資料.pdf">📎 資料.pdf</a></div>` |
 | 他ページの埋め込み | `<div class="lhe-embed"><iframe src="other.html" height="400" loading="lazy"></iframe></div>` |
 | パネル | 下記 |
+| 子ページ一覧 | `<nav class="lhe-children" data-order="asc"></nav>`(下記) |
 | 目次 | `<!--lhe:toc-->`(この1行だけ書く。h1〜h4 から lhe.js が目次を描く) |
 | Mermaid図 | 下記 |
 
@@ -121,6 +122,20 @@
 
 - `data-icon` と `lhe-panel-icon` の中身は同じ絵文字にする。
 - よく使う組み合わせ: 情報 `ℹ️` `#e8f1fd` / 注意 `⚠️` `#fff6dc` / 成功 `✅` `#e6f6ea` / エラー `⛔` `#fde8e8` / メモ `📝` `#f1eafd`
+
+### 子ページ一覧
+
+`page.html` と同じ階層にある同名のディレクトリ `page/` の中(孫を含む)のHTMLを「子ページ」とし、そのリンクを入れ子のリストで並べる。
+
+```html
+<nav class="lhe-children" data-order="asc"><ul><li><a href="page/a.html">Aのタイトル</a><ul><li><a href="page/a/b.html">B</a></li></ul></li></ul></nav>
+```
+
+- `data-order` は `asc`(名前の昇順)か `desc`(名前の降順)。並べ替えはファイル名(ディレクトリ名)で行う。
+- `nav` の中身はエディタが保存のたびに作り直す(子ページの作成・タイトルの変更でも親のページを作り直す)。
+  手で書くときは、上の形に合わせて中身も書いておく(リンクの文字は子ページの `<title>`)。
+- `page/x.html` の子は `page/x/` の中のHTML(リストの中で入れ子にする)。同名のHTMLがないディレクトリは、ディレクトリ名の項目の下に並べる。
+- `layout.html` と `_IMG` で終わるディレクトリは並べない。
 
 ### Mermaid図
 

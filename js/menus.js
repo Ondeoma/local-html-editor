@@ -24,6 +24,7 @@ export function slashItems(panels) {
     { label: 'ページの埋め込み', icon: '⧉', keys: 'embed iframe page umekomi pe-ji うめこみ ぺーじ', cmd: 'embed' },
     { label: 'リンク', icon: '🔗', keys: 'link url rinku りんく', cmd: 'link' },
     { label: '目次', icon: '☰', keys: 'toc contents mokuji もくじ', cmd: 'toc' },
+    { label: '子ページ一覧', icon: '🗂', keys: 'children child pages list kope-ji ichiran こぺーじ いちらん', cmd: 'children' },
     { label: 'Mermaid図', icon: '◇', keys: 'mermaid diagram chart zu ma-meido ず まーめいど', cmd: 'mermaid' },
     ...panels.map((p) => ({ label: `${p.label}パネル`, icon: p.icon, keys: `panel paneru ぱねる ${p.id}`, cmd: 'panel', arg: p.id })),
   ]

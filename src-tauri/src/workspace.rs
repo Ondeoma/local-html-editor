@@ -166,8 +166,118 @@ pub fn compose(root: &Path, rel: &str, title: &str, content: &str) -> String {
          {CONTENT_START}\n{}\n{CONTENT_END}\n</body>\n</html>\n",
         escape(title),
         head.join("\n"),
-        content.trim()
+        fill_children(root, rel, content.trim())
     )
+}
+
+// ---- 子ページ一覧 ----
+//
+// `a/page.html` の子ページは、同じ階層の同名のディレクトリ `a/page/` の中(孫を含む)のHTML.
+// 本文の `<nav class="lhe-children" data-order="asc|desc">` の中身は、保存のたびにここで作り直す
+// (lhe.js を使わない静的なリンクなので、ファイルを直接開いても表示できる).
+
+const CHILDREN_CLASS: &str = "lhe-children";
+
+/// リンクの href に使うため、パスの各部分をエンコードする(日本語などはそのまま)
+const HREF_SET: &percent_encoding::AsciiSet =
+    &percent_encoding::CONTROLS.add(b' ').add(b'"').add(b'#').add(b'%').add(b'?').add(b'<').add(b'>').add(b'\'');
+
+fn href_of(parts: &[String]) -> String {
+    parts.iter().map(|p| percent_encoding::utf8_percent_encode(p, HREF_SET).to_string()).collect::<Vec<_>>().join("/")
+}
+
+/// HTMLのタイトル(なければ拡張子を除いたファイル名)
+fn title_of(path: &Path) -> String {
+    let stem = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    fs::read_to_string(path).ok().and_then(|h| extract_title(&h)).filter(|t| !t.trim().is_empty()).unwrap_or(stem)
+}
+
+/// dir の中のHTMLを入れ子のリスト(<ul>)にします. base は呼び出し元のHTMLからの相対パスの先頭
+fn children_list(dir: &Path, base: &[String], desc: bool) -> String {
+    let Ok(rd) = fs::read_dir(dir) else { return String::new() };
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
+    for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().to_string();
+        let p = e.path();
+        if p.is_dir() {
+            if !skip_dir(&name) {
+                dirs.push(name);
+            }
+        } else if is_html(&name) && !name.to_ascii_lowercase().starts_with(&format!("{LAYOUT_STEM}.")) {
+            files.push(name);
+        }
+    }
+    let stems: HashSet<String> = files.iter().map(|f| f.rsplit_once('.').map(|(s, _)| s.to_string()).unwrap_or_default()).collect();
+    // (並べ替えの名前, li の中身)
+    let mut items: Vec<(String, String)> = Vec::new();
+    for f in &files {
+        let stem = f.rsplit_once('.').map(|(s, _)| s.to_string()).unwrap_or_default();
+        let mut parts = base.to_vec();
+        parts.push(f.clone());
+        let mut li = format!(r#"<a href="{}">{}</a>"#, href_of(&parts), escape(&title_of(&dir.join(f))));
+        if dirs.contains(&stem) {
+            let mut sub = base.to_vec();
+            sub.push(stem.clone());
+            li.push_str(&children_list(&dir.join(&stem), &sub, desc));
+        }
+        items.push((f.clone(), li));
+    }
+    // 同名のHTMLがないディレクトリは、名前だけを出して中を並べる
+    for d in dirs.iter().filter(|d| !stems.contains(*d)) {
+        let mut sub = base.to_vec();
+        sub.push(d.clone());
+        let inner = children_list(&dir.join(d), &sub, desc);
+        if !inner.is_empty() {
+            items.push((d.clone(), format!("<span>{}</span>{inner}", escape(d))));
+        }
+    }
+    if items.is_empty() {
+        return String::new();
+    }
+    items.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()).then_with(|| a.0.cmp(&b.0)));
+    if desc {
+        items.reverse();
+    }
+    format!("<ul>{}</ul>", items.into_iter().map(|(_, li)| format!("<li>{li}</li>")).collect::<String>())
+}
+
+/// HTML(ワークスペースからの相対パス)の子ページ一覧の中身
+pub fn children_html(root: &Path, rel: &str, desc: bool) -> String {
+    let (dirs, stem) = split_html(rel);
+    let dir = dirs.iter().fold(root.to_path_buf(), |p, d| p.join(d)).join(&stem);
+    let list = children_list(&dir, &[stem], desc);
+    if list.is_empty() { r#"<p class="lhe-children-empty">(子ページはありません)</p>"#.to_string() } else { list }
+}
+
+/// 本文の子ページ一覧の中身を作り直します
+fn fill_children(root: &Path, rel: &str, content: &str) -> String {
+    if !content.contains(CHILDREN_CLASS) {
+        return content.to_string();
+    }
+    static NAV: OnceLock<Regex> = OnceLock::new();
+    let re = NAV.get_or_init(|| Regex::new(r#"(?s)<nav\b([^>]*\bclass="lhe-children"[^>]*)>.*?</nav>"#).unwrap());
+    re.replace_all(content, |c: &regex::Captures| {
+        let desc = c[1].contains(r#"data-order="desc""#);
+        format!("<nav{}>{}</nav>", &c[1], children_html(root, rel, desc))
+    })
+    .to_string()
+}
+
+/// rel の祖先にあたるHTML(子ページ一覧を持つもの)の一覧を作り直します.
+/// `a/b/c.html` なら `a.html`・`a/b.html` が対象.
+pub fn refresh_parents(root: &Path, rel: &str) -> Result<(), String> {
+    let parts: Vec<&str> = rel.split('/').filter(|s| !s.is_empty()).collect();
+    for k in 1..parts.len() {
+        for ext in ["html", "htm"] {
+            let parent = format!("{}.{ext}", parts[..k].join("/"));
+            let p = resolve(root, &parent)?;
+            if fs::read_to_string(&p).map(|h| h.contains(CHILDREN_CLASS)).unwrap_or(false) {
+                refresh_html(root, &parent)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// 保存されたHTMLから本文を取り出します(目印のコメントがなければ body の中身).
@@ -240,6 +350,7 @@ pub fn refresh_siblings(root: &Path, dir_rel: &str) -> Result<(), String> {
 
 /// HTMLを作った後の処理: layout.html なら、同じディレクトリのHTMLが読み込むよう head を付け直す
 pub fn after_html_created(root: &Path, rel: &str) -> Result<(), String> {
+    refresh_parents(root, rel)?;
     let (_, stem) = split_html(rel);
     if stem == LAYOUT_STEM {
         refresh_siblings(root, rel.rsplit_once('/').map(|(d, _)| d).unwrap_or(""))?;
@@ -566,6 +677,31 @@ mod tests {
         assert!(l.contains(r#"href="layout.css""#), "{l}"); // 自分の個別CSSとして
         let b = fs::read_to_string(root.join("d/sub/b.html")).unwrap();
         assert!(!b.contains("lhe-layout"), "{b}"); // 下の階層には効かない
+    }
+
+    #[test]
+    fn children_list_nested_and_ordered() {
+        let root = tmp("children");
+        fs::create_dir_all(root.join("doc/page/b")).unwrap();
+        fs::create_dir_all(root.join("doc/page/x")).unwrap();
+        for (p, t) in [("doc/page/a.html", "Aの記事"), ("doc/page/b.html", "B"), ("doc/page/b/c.html", "C"), ("doc/page/x/y z.html", "Y")] {
+            fs::write(root.join(p), compose(&root, p, t, "<p></p>")).unwrap();
+        }
+        let page = r#"<nav class="lhe-children" data-order="asc"></nav>"#;
+        fs::write(root.join("doc/page.html"), compose(&root, "doc/page.html", "P", page)).unwrap();
+        let html = fs::read_to_string(root.join("doc/page.html")).unwrap();
+        let want = r#"<ul><li><a href="page/a.html">Aの記事</a></li><li><a href="page/b.html">B</a><ul><li><a href="page/b/c.html">C</a></li></ul></li><li><span>x</span><ul><li><a href="page/x/y%20z.html">Y</a></li></ul></li></ul>"#;
+        assert!(html.contains(want), "{html}");
+        assert_eq!(extract_content(&html).matches("<nav").count(), 1);
+        // 降順
+        let desc = children_html(&root, "doc/page.html", true);
+        assert!(desc.find("span>x").unwrap() < desc.find("Aの記事").unwrap(), "{desc}");
+        // 孫を作ると、祖先の一覧が作り直される
+        fs::write(root.join("doc/page/a2.html"), compose(&root, "doc/page/a2.html", "A2", "<p></p>")).unwrap();
+        after_html_created(&root, "doc/page/a2.html").unwrap();
+        assert!(fs::read_to_string(root.join("doc/page.html")).unwrap().contains("page/a2.html"));
+        // 子がなければ空の表示
+        assert!(children_html(&root, "doc/none.html", false).contains("lhe-children-empty"));
     }
 
     #[test]

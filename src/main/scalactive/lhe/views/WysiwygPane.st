@@ -119,6 +119,7 @@ val aligns = List(("left", "⇤", "左寄せ"), ("center", "↔", "中央寄せ"
         <button title="ファイル" @click='exec(s, "file")'>📎</button>
         <button title="他ページの埋め込み" @click='exec(s, "embed")'>⧉</button>
         <button title="目次" @click='exec(s, "toc")'>☰</button>
+        <button title="子ページ一覧(このHTMLと同名のディレクトリの中のページへのリンク)" @click='exec(s, "children")'>🗂</button>
         <button title="Mermaid図" @click='exec(s, "mermaid")'>◇</button>
         <button v-if="isLayout(props.path)" title="コンテンツ枠(同じディレクトリの各ページの本文が入る場所)" @click='exec(s, "slot")'>📄枠</button>
       </span>

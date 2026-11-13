@@ -1,0 +1,17 @@
+<!-- ローカルHTMLエディタのアイコン(G2: 紺の背景に、オレンジの括弧で挟んだ白いページ).
+     各OS向けのアイコンは、1024px のPNGに書き出してから作り直す
+     (rsvg-convert -w 1024 -h 1024 src-tauri/icons/icon.svg -o icon.png && npx tauri icon icon.png -o src-tauri/icons).
+     macOS の作法に合わせ、1024px の中に 824px の角丸の板を置き、周りを透明の余白にしている -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g transform="translate(100 100) scale(5.4933)">
+    <rect width="150" height="150" rx="34" fill="#1f2340"/>
+    <path d="M37 45 l-22 30 l22 30" fill="none" stroke="#ff9f43" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M113 45 l22 30 l-22 30" fill="none" stroke="#ff9f43" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="50" y="33" width="50" height="84" rx="6" fill="#f4f5fb"/>
+    <rect x="57" y="45" width="24" height="6" rx="3" fill="#ff9f43"/>
+    <rect x="57" y="59" width="36" height="4" rx="2" fill="#b4bad8"/>
+    <rect x="57" y="69" width="30" height="4" rx="2" fill="#b4bad8"/>
+    <rect x="57" y="81" width="36" height="14" rx="3" fill="#7fb0ff"/>
+    <rect x="57" y="101" width="26" height="4" rx="2" fill="#b4bad8"/>
+  </g>
+</svg>
